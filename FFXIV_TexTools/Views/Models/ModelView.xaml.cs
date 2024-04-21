@@ -25,9 +25,14 @@ namespace FFXIV_TexTools.Views
     /// </summary>
     public partial class ModelView : UserControl
     {
+        private Helpers.DX11CanvasRenderer canvasRenderer = null;
+
         public ModelView()
         {
             InitializeComponent();
+
+            if (Configuration.EnvironmentConfiguration.TT_Unshared_Rendering)
+                canvasRenderer = new Helpers.DX11CanvasRenderer(viewport3DX, AlternateViewportCanvas);
 
             this.DataContext = new ModelViewModel(this);
         }

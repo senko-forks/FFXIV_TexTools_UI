@@ -55,10 +55,15 @@ namespace FFXIV_TexTools.Controls
         ObservableCollection<KeyValuePair<int, string>> PreviewDyeCollection = new ObservableCollection<KeyValuePair<int, string>>();
         ObservableCollection<KeyValuePair<int, string>> TileMaterialIds = new ObservableCollection<KeyValuePair<int, string>>();
 
+        private Helpers.DX11CanvasRenderer canvasRenderer = null;
+
         public ColorsetEditorControl()
         {
             this.DataContext = _vm = new ColorsetEditorViewModel(this);
             InitializeComponent();
+
+            if (Configuration.EnvironmentConfiguration.TT_Unshared_Rendering)
+                canvasRenderer = new Helpers.DX11CanvasRenderer(ColorsetRowViewport, AlternateViewportCanvas);
 
             for (int i = 0; i < 16; i++)
             {
