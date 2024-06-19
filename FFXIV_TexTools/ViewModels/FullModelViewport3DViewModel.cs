@@ -52,8 +52,6 @@ namespace FFXIV_TexTools.ViewModels
     public class FullModelViewport3DViewModel : Viewport3DViewModel
     {
 
-        private static readonly Regex bodyMaterial = new Regex("[bf][0-9]{4}", RegexOptions.IgnoreCase);
-
         public Dictionary<string, DisplayedModelData> shownModels = new Dictionary<string, DisplayedModelData>();
 
         public FullModelViewport3DViewModel()
@@ -96,31 +94,17 @@ namespace FFXIV_TexTools.ViewModels
 
             for (var i = 0; i < totalMeshCount; i++)
             {
-                var (meshGeometry3D, isBodyMaterial) = GetMeshGeometry(model, i);
+                var meshGeometry3D = GetMeshGeometry(model, i);
 
                 var textureData = textureDataDictionary[model.GetMaterialIndex(i)];
 
                 TextureModel diffuse = null, specular = null, normal = null, alpha = null, emissive = null;
 
-                if (!isBodyMaterial)
-                {
-                    if (textureData.Diffuse != null && textureData.Diffuse.Length > 0)
-                        diffuse = new TextureModel(NormalizePixelData(textureData.Diffuse), textureData.Width, textureData.Height);
+                if (textureData.Diffuse != null && textureData.Diffuse.Length > 0)
+                    diffuse = new TextureModel(textureData.Diffuse, SharpDX.DXGI.Format.R8G8B8A8_UNorm, textureData.Width, textureData.Height);
 
-                    if (textureData.Specular != null && textureData.Specular.Length > 0)
-                        specular = new TextureModel(NormalizePixelData(textureData.Specular), textureData.Width, textureData.Height);
-
-                    if (textureData.Emissive != null && textureData.Emissive.Length > 0)
-                        emissive = new TextureModel(NormalizePixelData(textureData.Emissive), textureData.Width, textureData.Height);
-                }
-                else
-                {
-                    if (textureData.Diffuse != null && textureData.Diffuse.Length > 0)
-                        diffuse = new TextureModel(textureData.Diffuse, SharpDX.DXGI.Format.R8G8B8A8_UNorm, textureData.Width, textureData.Height);
-
-                    if (textureData.Specular != null && textureData.Specular.Length > 0)
-                        specular = new TextureModel(textureData.Specular, SharpDX.DXGI.Format.R8G8B8A8_UNorm, textureData.Width, textureData.Height);
-                }
+                if (textureData.Specular != null && textureData.Specular.Length > 0)
+                    specular = new TextureModel(textureData.Specular, SharpDX.DXGI.Format.R8G8B8A8_UNorm, textureData.Width, textureData.Height);
 
                 if (textureData.Normal != null && textureData.Normal.Length > 0)
                     normal = new TextureModel(textureData.Normal, SharpDX.DXGI.Format.R8G8B8A8_UNorm, textureData.Width, textureData.Height);
@@ -287,10 +271,9 @@ namespace FFXIV_TexTools.ViewModels
         /// <param name="model">The model to get the geometry from</param>
         /// <param name="meshGroupId">The mesh group ID</param>
         /// <returns>The Skinned Mesh Geometry</returns>
-        private (MeshGeometry3D, bool) GetMeshGeometry(TTModel model, int meshGroupId)
+        private MeshGeometry3D GetMeshGeometry(TTModel model, int meshGroupId)
         {
             var group = model.MeshGroups[meshGroupId];
-            var isBodyMaterial = bodyMaterial.IsMatch(group.Material);
             var mg = new MeshGeometry3D
             {
                 Positions = new Vector3Collection((int)group.VertexCount),
@@ -343,7 +326,7 @@ namespace FFXIV_TexTools.ViewModels
                 vertCount += p.Vertices.Count;
                 indexCount += p.TriangleIndices.Count;
             }
-            return (mg, isBodyMaterial);
+            return mg;
         }
 
 

@@ -58,7 +58,6 @@ namespace FFXIV_TexTools.ViewModels
         private Vector3D _light1Direction;
         private Vector3D _light2Direction;
         private Vector3D _light3Direction;
-        private static readonly Regex bodyMaterial = new Regex("[bf][0-9]{4}", RegexOptions.IgnoreCase);
 
         public delegate void ViewportEventHandler(Viewport3DViewModel owner);
         public delegate void ViewportZoomEventHandler(Viewport3DViewModel owner, double animationTime, Rect3D? boundingBox);
@@ -90,7 +89,7 @@ namespace FFXIV_TexTools.ViewModels
             csetMax = 16;
 #endif
             ColorsetRowSource.Add(new KeyValuePair<string, int>("All", -1));
-            for(int i = 0; i < csetMax; i++)
+            for (int i = 0; i < csetMax; i++)
             {
                 ColorsetRowSource.Add(new KeyValuePair<string, int>(ViewHelpers.ColorsetRowToNiceName(i).ToString(), i));
             }
@@ -101,7 +100,7 @@ namespace FFXIV_TexTools.ViewModels
 
         protected void CameraInternal_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if(e.PropertyName == "LookDirection")
+            if (e.PropertyName == "LookDirection")
             {
                 OnCameraDirectionChanged();
             }
@@ -202,13 +201,13 @@ namespace FFXIV_TexTools.ViewModels
             _UPDATING = true;
             VisibleMeshSource.Clear();
             VisibleMeshSource.Add(new KeyValuePair<string, int>("All", -1));
-            if(_Model == null)
+            if (_Model == null)
             {
                 VisibleMesh = -1;
                 return;
             }
 
-            for(int i = 0; i < _Model.MeshGroups.Count; i++)
+            for (int i = 0; i < _Model.MeshGroups.Count; i++)
             {
                 VisibleMeshSource.Add(new KeyValuePair<string, int>(i.ToString(), i));
             }
@@ -311,7 +310,6 @@ namespace FFXIV_TexTools.ViewModels
                         }
                     }
 
-                    var isBodyMaterial = bodyMaterial.IsMatch(model.MeshGroups[i].Material);
                     var mtrlName = "/" + Path.GetFileName(model.MeshGroups[i].Material);
 
                     if (newTextures)
@@ -323,7 +321,7 @@ namespace FFXIV_TexTools.ViewModels
                             if (ModelModifiers.IsSkinMaterial(mtrlName))
                             {
                                 textureData = textureDataDictionary.FirstOrDefault(x => x.IsSkin);
-                                if(textureData == null)
+                                if (textureData == null)
                                 {
                                     // Skin material, but we have no textures for skin.
                                     textureData = ModelFileControl.GetPlaceholderTexture(mtrlName);
@@ -337,22 +335,12 @@ namespace FFXIV_TexTools.ViewModels
                         }
 
                         TextureModel diffuse = null, specular = null, normal = null, alpha = null, emissive = null;
-                        if (!isBodyMaterial)
-                        {
-                            if (textureData.Diffuse != null && textureData.Diffuse.Length > 0)
-                                diffuse = new TextureModel(NormalizePixelData(textureData.Diffuse), textureData.Width, textureData.Height);
 
-                            if (textureData.Specular != null && textureData.Specular.Length > 0)
-                                specular = new TextureModel(NormalizePixelData(textureData.Specular), textureData.Width, textureData.Height);
-                        }
-                        else
-                        {
-                            if (textureData.Diffuse != null && textureData.Diffuse.Length > 0)
-                                diffuse = new TextureModel(textureData.Diffuse, SharpDX.DXGI.Format.R8G8B8A8_UNorm, textureData.Width, textureData.Height);
+                        if (textureData.Diffuse != null && textureData.Diffuse.Length > 0)
+                            diffuse = new TextureModel(textureData.Diffuse, SharpDX.DXGI.Format.R8G8B8A8_UNorm, textureData.Width, textureData.Height);
 
-                            if (textureData.Specular != null && textureData.Specular.Length > 0)
-                                specular = new TextureModel(textureData.Specular, SharpDX.DXGI.Format.R8G8B8A8_UNorm, textureData.Width, textureData.Height);
-                        }
+                        if (textureData.Specular != null && textureData.Specular.Length > 0)
+                            specular = new TextureModel(textureData.Specular, SharpDX.DXGI.Format.R8G8B8A8_UNorm, textureData.Width, textureData.Height);
 
                         if (textureData.Normal != null && textureData.Normal.Length > 0)
                             normal = new TextureModel(textureData.Normal, SharpDX.DXGI.Format.R8G8B8A8_UNorm, textureData.Width, textureData.Height);
@@ -382,7 +370,7 @@ namespace FFXIV_TexTools.ViewModels
                 }
             });
 
-            if(myId != LastUpdateId)
+            if (myId != LastUpdateId)
             {
                 // We got re-called while we were off thread.
                 return;
@@ -457,10 +445,10 @@ namespace FFXIV_TexTools.ViewModels
             }
 
 
-            
+
             Camera.UpDirection = new Vector3D(0, 1, 0);
 
-            if(newModel && originalModel != _Model && AllowCameraReset)
+            if (newModel && originalModel != _Model && AllowCameraReset)
             {
                 ResetLights();
 
@@ -471,30 +459,6 @@ namespace FFXIV_TexTools.ViewModels
                     ZoomExtentsRequested?.Invoke(this, 0, r3d);
                 }
             }
-        }
-
-        /// <summary>
-        /// Take the square root of every pixels' RGB datapoints to match the behavior of the FF14 engine
-        /// </summary>
-        /// <param name="img"></param>
-        protected static Color4[] NormalizePixelData(byte[] img)
-        {
-            Color4[] result = new Color4[img.Length / 4];
-            Parallel.ForEach(Partitioner.Create(0, img.Length / 4), range =>
-            {
-                for (int i = range.Item1 * 4; i < range.Item2 * 4; i += 4)
-                {
-                    // This is the only way to do a true single-precision sqrt in .NET Framework
-                    var tmp = Vector4.SquareRoot(new Vector4(
-                        img[i] / 255.0f,
-                        img[i + 1] / 255.0f,
-                        img[i + 2] / 255.0f,
-                        img[i + 3] / 255.0f
-                    ));
-                    result[i / 4] = new Color4(tmp.X, tmp.Y, tmp.Z, tmp.W);
-                }
-            });
-            return result;
         }
 
         /// <summary>
